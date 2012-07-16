@@ -10,7 +10,8 @@ package org.jruby.rack;
 import org.jruby.rack.servlet.DefaultServletRackContext;
 import org.jruby.rack.servlet.ServletRackConfig;
 import org.jruby.rack.servlet.ServletRackContext;
-
+import java.sql.*;
+import java.util.*; 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
@@ -53,6 +54,18 @@ public class RackServletContextListener implements ServletContextListener {
     }
 
     public void contextDestroyed(ServletContextEvent ctxEvent) {
+        // This manually deregisters JDBC driver, which prevents Tomcat 7 from complaining about memory leaks wrto this class
+        Enumeration<Driver> drivers = DriverManager.getDrivers();
+        while (drivers.hasMoreElements()) {
+            Driver driver = drivers.nextElement();
+            try {
+                DriverManager.deregisterDriver(driver);
+//                LOG.log(Level.INFO, String.format("deregistering jdbc driver: %s", driver));
+            } catch (SQLException e) {
+//                LOG.log(Level.SEVERE, String.format("Error deregistering driver %s", driver), e);
+            }
+
+        }
         final ServletContext context = ctxEvent.getServletContext();
         final RackApplicationFactory factory =
                 (RackApplicationFactory) context.getAttribute(RackApplicationFactory.FACTORY);
